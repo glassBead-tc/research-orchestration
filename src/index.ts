@@ -11,12 +11,18 @@ import { registerCompetitorFinderTool } from "./tools/competitorFinder.js";
 import { registerLinkedInSearchTool } from "./tools/linkedInSearch.js";
 import { registerWikipediaSearchTool } from "./tools/wikipediaSearch.js";
 import { registerGithubSearchTool } from "./tools/githubSearch.js";
+import { registerRedditSearchTool } from "./tools/redditSearch.js";
+import { registerYoutubeSearchTool } from "./tools/youtubeSearch.js";
+import { registerTiktokSearchTool } from "./tools/tiktokSearch.js";
+import { registerYoutubeVideoDetailsTool } from "./tools/youtubeVideoDetails.js";
+import { registerOrchestrationReasoning } from "./tools/orchestrationReasoning.js";
 import { registerUserGuideResources } from "./resources/userGuides.js";
 import { log } from "./utils/logger.js";
 
 // Configuration schema for the EXA API key and tool selection
 export const configSchema = z.object({
   exaApiKey: z.string().optional().describe("Exa AI API key for search operations"),
+  youtubeApiKey: z.string().optional().describe("YouTube Data API v3 key for video details operations"),
   enabledTools: z.array(z.string()).optional().describe("List of tools to enable (if not specified, all tools are enabled)"),
   debug: z.boolean().default(false).describe("Enable debug logging")
 });
@@ -30,7 +36,12 @@ const availableTools = {
   'competitor_finder_exa': { name: 'Competitor Finder', description: 'Find business competitors', enabled: true },
   'linkedin_search_exa': { name: 'LinkedIn Search', description: 'Search LinkedIn profiles and companies', enabled: true },
   'wikipedia_search_exa': { name: 'Wikipedia Search', description: 'Search Wikipedia articles', enabled: true },
-  'github_search_exa': { name: 'GitHub Search', description: 'Search GitHub repositories and code', enabled: true }
+  'github_search_exa': { name: 'GitHub Search', description: 'Search GitHub repositories and code', enabled: true },
+  'reddit_search_exa': { name: 'Reddit Search', description: 'Search Reddit for discussions about websites or topics', enabled: true },
+  'youtube_search_exa': { name: 'YouTube Search', description: 'Search YouTube videos, channels, and playlists', enabled: true },
+  'tiktok_search_exa': { name: 'TikTok Search', description: 'Search TikTok for videos', enabled: true },
+  'youtube_video_details_exa': { name: 'YouTube Video Details', description: 'Get detailed information about YouTube videos', enabled: true },
+  'orchestration_reasoning': { name: 'Orchestration Reasoning', description: 'Design custom retrieval orchestrations using game-theoretic reasoning', enabled: true }
 };
 
 /**
@@ -114,6 +125,35 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
     if (shouldRegisterTool('github_search_exa')) {
       registerGithubSearchTool(server, config);
       registeredTools.push('github_search_exa');
+    }
+    
+    if (shouldRegisterTool('reddit_search_exa')) {
+      registerRedditSearchTool(server, config);
+      registeredTools.push('reddit_search_exa');
+    }
+    
+    if (shouldRegisterTool('youtube_search_exa')) {
+      registerYoutubeSearchTool(server, config);
+      registeredTools.push('youtube_search_exa');
+    }
+    
+    if (shouldRegisterTool('tiktok_search_exa')) {
+      registerTiktokSearchTool(server, config);
+      registeredTools.push('tiktok_search_exa');
+    }
+    
+    if (shouldRegisterTool('youtube_video_details_exa')) {
+      registerYoutubeVideoDetailsTool(server, config);
+      registeredTools.push('youtube_video_details_exa');
+    }
+    
+    if (shouldRegisterTool('orchestration_reasoning')) {
+      registerOrchestrationReasoning(server, {
+        orchestrationPath: './src/resources/orchestrations',
+        enablePatternAnalysis: true,
+        defaultAgenticLevel: 'guided'
+      });
+      registeredTools.push('orchestration_reasoning');
     }
     
     if (config.debug) {

@@ -3,3 +3,17 @@ build/
 *.log
 .env*
 .smithery/
+
+cc_mcp_config.json
+.roomodes
+directory-structure.md
+directory-tree-visual.txt
+retrieval-orchestration-patterns-analysis.md
+test-orchestration-reasoning.js
+workflow-directory-structure.md
+pseudocode/
+specs/
+agent-commands/
+docs/
+.roo/
+.claude/
