@@ -14,11 +14,16 @@ import {
   OrchestrationSpecification,
   GameStateMetrics,
   OrchestrationError,
-  ValidationResult
-} from '../types/orchestrationReasoning.js';
-import { OrchestrationGameState } from '../utils/orchestrationGameState.js';
-import { PatternAnalyzer } from '../utils/patternAnalyzer.js';
-import { PrimitiveSequencer } from '../utils/primitiveSequencer.js';
+  ValidationResult,
+  SequentialReasoningChain,
+  ThoughtStep,
+  DependencyGraph,
+  ExecutionPlan,
+  ToolExecutionGuide
+} from '../../types/orchestrationReasoning.js';
+import { OrchestrationGameState } from '../../utils/orchestrationGameState.js';
+import { PatternAnalyzer } from '../../utils/patternAnalyzer.js';
+import { PrimitiveSequencer } from '../../utils/primitiveSequencer.js';
 
 /**
  * Main orchestration reasoning MCP tool
@@ -114,7 +119,13 @@ class OrchestrationReasoningEngine {
   /**
    * Execute the complete 5-phase reasoning process
    */
-  public async executeReasoningProcess(input: OrchestrationReasoningInput): Promise<OrchestrationPlan> {
+  public async executeReasoningProcess(input: OrchestrationReasoningInput): Promise<OrchestrationPlan & {
+    sequential_reasoning?: {
+      thinking_steps: ThoughtStep[];
+      dependency_analysis: DependencyGraph;
+      execution_plan: ExecutionPlan;
+    };
+  }> {
     // Phase 0: Initialize game state and components
     await this.initializeComponents(input);
     
@@ -125,6 +136,13 @@ class OrchestrationReasoningEngine {
       phase_4_sequence_design: {} as SequenceDesignPhase,
       phase_5_validation: {} as ValidationPhase
     };
+    
+    // Store enhanced sequence design data
+    let enhancedSequenceData: {
+      thinking_steps?: ThoughtStep[];
+      dependency_graph?: DependencyGraph;
+      execution_plan?: ExecutionPlan;
+    } = {};
 
     // Execute reasoning phases with anti-spiral detection
     let shouldContinue = true;
@@ -151,7 +169,14 @@ class OrchestrationReasoningEngine {
           reasoningChain.phase_3_pattern_analysis = await this.executePhase3PatternAnalysis(input, reasoningChain.phase_1_need_analysis);
           break;
         case 4:
-          reasoningChain.phase_4_sequence_design = await this.executePhase4SequenceDesign(input, reasoningChain);
+          const enhancedDesign = await this.executePhase4SequenceDesign(input, reasoningChain);
+          reasoningChain.phase_4_sequence_design = enhancedDesign;
+          // Store enhanced data separately
+          enhancedSequenceData = {
+            thinking_steps: enhancedDesign.thinking_steps,
+            dependency_graph: enhancedDesign.dependency_graph,
+            execution_plan: enhancedDesign.execution_plan
+          };
           break;
         case 5:
           reasoningChain.phase_5_validation = await this.executePhase5Validation(input, reasoningChain);
@@ -176,8 +201,24 @@ class OrchestrationReasoningEngine {
       }
     }
 
-    // Generate final orchestration plan
-    return this.generateOrchestrationPlan(input, reasoningChain);
+    // Generate final orchestration plan with enhanced data
+    const basePlan = this.generateOrchestrationPlan(input, reasoningChain);
+    
+    // Add sequential reasoning data if available
+    if (enhancedSequenceData.thinking_steps && 
+        enhancedSequenceData.dependency_graph && 
+        enhancedSequenceData.execution_plan) {
+      return {
+        ...basePlan,
+        sequential_reasoning: {
+          thinking_steps: enhancedSequenceData.thinking_steps,
+          dependency_analysis: enhancedSequenceData.dependency_graph,
+          execution_plan: enhancedSequenceData.execution_plan
+        }
+      };
+    }
+    
+    return basePlan;
   }
 
   private async initializeComponents(input: OrchestrationReasoningInput): Promise<void> {
@@ -298,13 +339,17 @@ class OrchestrationReasoningEngine {
   }
 
   /**
-   * Phase 4: Primitive Sequence Design
+   * Phase 4: Enhanced Primitive Sequence Design with Sequential Thinking
    */
   private async executePhase4SequenceDesign(
     input: OrchestrationReasoningInput,
     reasoningChain: Partial<ReasoningChain>
-  ): Promise<SequenceDesignPhase> {
-    console.log('🔧 Phase 4: Primitive Sequence Design');
+  ): Promise<SequenceDesignPhase & {
+    thinking_steps?: ThoughtStep[];
+    dependency_graph?: DependencyGraph;
+    execution_plan?: ExecutionPlan;
+  }> {
+    console.log('🔧 Phase 4: Primitive Sequence Design with Sequential Thinking');
     
     const needAnalysis = reasoningChain.phase_1_need_analysis!;
     const patternAnalysis = reasoningChain.phase_3_pattern_analysis!;
@@ -312,14 +357,46 @@ class OrchestrationReasoningEngine {
     // Get similar patterns for sequence design
     const relevantPatterns = this.patternAnalyzer.findSimilarPatterns(input).slice(0, 3);
     
-    // Design sequence using game-theoretic evaluation
-    const sequenceDesign = this.primitiveSequencer.designSequence(
+    // Design sequence using enhanced game-theoretic evaluation with sequential thinking
+    const enhancedSequenceDesign = this.primitiveSequencer.designSequence(
       input,
       needAnalysis.components,
       relevantPatterns
     );
 
-    return sequenceDesign;
+    // Log thinking process if available
+    if (enhancedSequenceDesign.thinking_steps) {
+      console.log(`💭 Sequential thinking process: ${enhancedSequenceDesign.thinking_steps.length} thoughts`);
+      
+      // Log key insights from thinking process
+      const keyInsights = enhancedSequenceDesign.thinking_steps
+        .flatMap(t => t.keyInsights)
+        .filter(i => i.length > 0);
+      
+      if (keyInsights.length > 0) {
+        console.log('💡 Key insights:', keyInsights.slice(0, 3).join('; '));
+      }
+    }
+
+    // Log dependency analysis if available
+    if (enhancedSequenceDesign.dependency_graph) {
+      const graph = enhancedSequenceDesign.dependency_graph;
+      console.log(`🔗 Dependency graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
+      console.log(`🎯 Critical path: ${graph.critical_path.join(' → ')}`);
+      
+      if (graph.parallel_opportunities.length > 0) {
+        console.log(`⚡ Parallel opportunities: ${graph.parallel_opportunities.length} groups`);
+      }
+    }
+
+    // Log execution plan if available
+    if (enhancedSequenceDesign.execution_plan) {
+      const plan = enhancedSequenceDesign.execution_plan;
+      console.log(`📋 Execution plan: ${plan.plan_type} with ${plan.stages.length} stages`);
+      console.log(`⏱️  Estimated duration: ${plan.total_duration_estimate}s (critical path: ${plan.critical_path_duration}s)`);
+    }
+
+    return enhancedSequenceDesign;
   }
 
   /**
@@ -401,13 +478,17 @@ class OrchestrationReasoningEngine {
     // Get game state metrics
     const gameStateMetrics: GameStateMetrics = this.gameState.getGameMetrics();
 
+    // Add tool execution guide
+    const toolExecutionGuide = this.generateToolExecutionGuide();
+
     return {
       plan_id: planId,
       information_need: input.information_need,
       reasoning_chain: reasoningChain,
       execution_metadata: executionMetadata,
       orchestration_specification: orchestrationSpecification,
-      game_state_metrics: gameStateMetrics
+      game_state_metrics: gameStateMetrics,
+      tool_execution_guide: toolExecutionGuide
     };
   }
 
@@ -661,5 +742,29 @@ class OrchestrationReasoningEngine {
 
   private getCurrentPrimitiveCount(reasoningChain: Partial<ReasoningChain>): number {
     return reasoningChain.phase_4_sequence_design?.primitive_sequence?.length || 0;
+  }
+
+  /**
+   * Generate tool execution guide reference for orchestration implementation
+   */
+  private generateToolExecutionGuide(): any {
+    return {
+      tool_selection_reference: "See src/resources/tool-selection-guide.md for comprehensive tool selection guidance",
+      quick_reference: {
+        description: "Quick tool mapping for common information needs",
+        general_search: "web_search_exa",
+        academic_search: "research_paper_search_exa", 
+        company_data: "company_research_exa",
+        competitors: "competitor_finder_exa",
+        professional_profiles: "linkedin_search_exa",
+        factual_info: "wikipedia_search_exa",
+        code_examples: "github_search_exa",
+        community_sentiment: "scrape_reddit_exa",
+        video_content: "youtube_search_exa",
+        trending_topics: "tiktok_search_exa",
+        url_extraction: "crawling_exa"
+      },
+      execution_reminder: "Remember to leverage parallel execution when possible and verify result quality against orchestration requirements"
+    };
   }
 }

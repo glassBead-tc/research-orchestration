@@ -33,13 +33,13 @@ export function registerWebSearchTool(server: McpServer, config?: { exaApiKey?: 
 
         const searchRequest: ExaSearchRequest = {
           query,
-          type: "auto",
+          type: "fast",
           numResults: numResults || API_CONFIG.DEFAULT_NUM_RESULTS,
           contents: {
             text: {
               maxCharacters: API_CONFIG.DEFAULT_MAX_CHARACTERS
             },
-            livecrawl: 'preferred'
+            livecrawl: 'fallback'
           }
         };
         

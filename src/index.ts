@@ -45,7 +45,7 @@ const availableTools = {
 };
 
 /**
- * Exa AI Web Search MCP Server
+ * Retrieval Orchestrations MCP Server (Exa AI)
  * 
  * This MCP server integrates Exa AI's search capabilities with Claude and other MCP-compatible clients.
  * Exa is a search engine and API specifically designed for up-to-date web searching and retrieval,
@@ -70,7 +70,7 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
 
     // Create MCP server
     const server = new McpServer({
-      name: "exa-search-server",
+      name: "retrieval-orchestrations-server",
       version: "1.0.0"
     });
     

@@ -6,45 +6,95 @@ import {
   OrchestrationReasoningInput,
   PatternSimilarity,
   MinimaxRegretAnalysis,
-  SequenceDesignPhase
+  SequenceDesignPhase,
+  EnhancedPrimitiveStrategy,
+  DependencyGraph,
+  ExecutionPlan,
+  ExecutionStage,
+  ThoughtStep
 } from '../types/orchestrationReasoning.js';
 import { OrchestrationGameState } from './orchestrationGameState.js';
+import { ThoughtProcess } from './thoughtProcess.js';
+import { DependencyAnalyzer } from './dependencyAnalyzer.js';
 
 /**
- * Primitive sequencer with game-theoretic logic
- * Designs optimal primitive sequences using minimax regret analysis
+ * Enhanced Primitive sequencer with sequential thinking and dependency analysis
+ * Designs optimal primitive sequences using minimax regret analysis and dependency graphs
  */
 export class PrimitiveSequencer {
   private gameState: OrchestrationGameState;
   private availableTools: string[];
+  private thoughtProcess: ThoughtProcess;
+  private dependencyAnalyzer: DependencyAnalyzer;
 
   constructor(gameState: OrchestrationGameState, availableTools: string[] = []) {
     this.gameState = gameState;
     this.availableTools = availableTools;
+    this.thoughtProcess = new ThoughtProcess(30); // Allow up to 30 thoughts
+    this.dependencyAnalyzer = new DependencyAnalyzer();
   }
 
   /**
-   * Design primitive sequence using game-theoretic evaluation
+   * Enhanced design primitive sequence with sequential thinking and dependency analysis
    */
   public designSequence(
     input: OrchestrationReasoningInput,
     needComponents: string[],
     relevantPatterns: PatternSimilarity[]
-  ): SequenceDesignPhase {
+  ): SequenceDesignPhase & { 
+    thinking_steps?: ThoughtStep[]; 
+    dependency_graph?: DependencyGraph;
+    execution_plan?: ExecutionPlan;
+  } {
+    // Step 1: Analyze information need with sequential thinking
+    const thought1 = this.thoughtProcess.analyzeInformationNeed(input.information_need);
+    
+    // Step 2: Consider dependencies between components
+    const thought2 = this.thoughtProcess.considerDependencies(needComponents);
+    
     // Run information need auction to prioritize components
     const auctionBids = this.gameState.runInformationAuction(needComponents);
+    
+    // Step 3: Design primitive sequences with awareness of dependencies
+    const thought3 = this.thoughtProcess.designPrimitiveSequence(needComponents);
     
     // Generate sequence options using different strategies
     const sequenceOptions = this.generateSequenceOptions(input, auctionBids, relevantPatterns);
     
+    // Step 4: Analyze dependencies for each option
+    const dependencyGraphs = sequenceOptions.map(option => 
+      this.dependencyAnalyzer.analyzePrimitiveSequence(option)
+    );
+    
+    // Step 5: Identify parallel opportunities
+    const thought4 = this.thoughtProcess.identifyParallelOpportunities(
+      sequenceOptions.map(opt => opt.map(step => step.primitive).join(' → '))
+    );
+    
     // Evaluate options using minimax regret analysis
     const regretAnalysis = this.performMinimaxRegretAnalysis(sequenceOptions, input);
     
-    // Select best option based on game-theoretic evaluation
-    const bestOption = this.selectBestOption(sequenceOptions, regretAnalysis);
+    // Select best option based on game-theoretic evaluation and dependencies
+    const bestOptionIndex = this.parseOptionIndex(regretAnalysis.best_option);
+    const bestOption = this.enhanceWithDependencyInfo(
+      sequenceOptions[bestOptionIndex], 
+      dependencyGraphs[bestOptionIndex]
+    );
+    
+    // Generate execution plan based on dependency analysis
+    const executionPlan = this.generateExecutionPlan(
+      bestOption, 
+      dependencyGraphs[bestOptionIndex]
+    );
+    
+    // Step 6: Synthesize final plan
+    const thought5 = this.thoughtProcess.synthesizeFinalPlan();
     
     // Calculate integration strategy and quality checkpoints
-    const integrationStrategy = this.designIntegrationStrategy(bestOption);
+    const integrationStrategy = this.designEnhancedIntegrationStrategy(
+      bestOption, 
+      dependencyGraphs[bestOptionIndex]
+    );
     const qualityCheckpoints = this.calculateQualityCheckpoints(bestOption);
     const estimatedComplexity = this.estimateComplexity(bestOption);
 
@@ -52,7 +102,10 @@ export class PrimitiveSequencer {
       primitive_sequence: bestOption,
       integration_strategy: integrationStrategy,
       quality_checkpoints: qualityCheckpoints,
-      estimated_complexity: estimatedComplexity
+      estimated_complexity: estimatedComplexity,
+      thinking_steps: this.thoughtProcess.getThoughts(),
+      dependency_graph: dependencyGraphs[bestOptionIndex],
+      execution_plan: executionPlan
     };
   }
 
@@ -693,5 +746,185 @@ export class PrimitiveSequencer {
 
   private estimateComplexity(sequence: PrimitiveStep[]): number {
     return sequence.reduce((sum, step) => sum + step.complexity_cost, 0);
+  }
+
+  // New methods for enhanced sequential reasoning
+
+  private enhanceWithDependencyInfo(
+    sequence: PrimitiveStep[], 
+    dependencyGraph: DependencyGraph
+  ): PrimitiveStep[] {
+    // Enhance each step with dependency information
+    return sequence.map((step, index) => {
+      const nodeId = dependencyGraph.nodes[index]?.id;
+      const node = dependencyGraph.nodes.find(n => n.id === nodeId);
+      
+      if (!node) return step;
+      
+      // Find dependencies for this step
+      const dependencies = dependencyGraph.edges
+        .filter(edge => edge.to === nodeId)
+        .map(edge => edge.from);
+      
+      const dependents = dependencyGraph.edges
+        .filter(edge => edge.from === nodeId)
+        .map(edge => edge.to);
+      
+      // Enhance the strategy with dependency info
+      const enhancedStrategy: EnhancedPrimitiveStrategy = {
+        ...step.strategy,
+        execution_order: index,
+        depends_on: dependencies,
+        provides_for: dependents,
+        parallel_compatible: !dependencyGraph.critical_path.includes(nodeId),
+        timing_constraints: [{
+          type: 'duration_limit',
+          value: node.estimated_duration,
+          unit: 'seconds'
+        }]
+      };
+      
+      return {
+        ...step,
+        strategy: enhancedStrategy
+      };
+    });
+  }
+
+  private generateExecutionPlan(
+    sequence: PrimitiveStep[],
+    dependencyGraph: DependencyGraph
+  ): ExecutionPlan {
+    const stages: ExecutionStage[] = [];
+    const processedNodes = new Set<string>();
+    let stageNumber = 0;
+    
+    // Group primitives into execution stages based on dependencies
+    while (processedNodes.size < dependencyGraph.nodes.length) {
+      const availableNodes = dependencyGraph.nodes.filter(node => {
+        if (processedNodes.has(node.id)) return false;
+        
+        // Check if all dependencies are satisfied
+        const nodeDependencies = dependencyGraph.edges
+          .filter(edge => edge.to === node.id)
+          .map(edge => edge.from);
+        
+        return nodeDependencies.every(dep => processedNodes.has(dep));
+      });
+      
+      if (availableNodes.length === 0) break;
+      
+      // Group available nodes by parallel compatibility
+      const parallelGroups = this.groupByParallelCompatibility(
+        availableNodes, 
+        dependencyGraph
+      );
+      
+      const stage: ExecutionStage = {
+        stage_number: stageNumber++,
+        stage_name: `Stage ${stageNumber}: ${availableNodes.map(n => n.primitive).join(', ')}`,
+        parallel_groups: parallelGroups,
+        sequential_steps: parallelGroups.flatMap(g => g.primitives),
+        checkpoint: {
+          checkpoint_id: `checkpoint_${stageNumber}`,
+          validation_criteria: ['data_completeness', 'quality_threshold'],
+          minimum_quality_score: 0.7,
+          rollback_on_failure: stageNumber <= 2,
+          remediation_actions: ['retry_with_relaxed_criteria', 'use_cached_results']
+        },
+        estimated_duration: Math.max(...availableNodes.map(n => n.estimated_duration))
+      };
+      
+      stages.push(stage);
+      availableNodes.forEach(node => processedNodes.add(node.id));
+    }
+    
+    // Calculate total duration
+    const criticalPathDuration = dependencyGraph.nodes
+      .filter(n => dependencyGraph.critical_path.includes(n.id))
+      .reduce((sum, n) => sum + n.estimated_duration, 0);
+    
+    const totalDuration = stages.reduce((sum, stage) => sum + stage.estimated_duration, 0);
+    
+    return {
+      plan_type: dependencyGraph.parallel_opportunities.length > 0 ? 'hybrid' : 'sequential',
+      stages,
+      critical_path_duration: criticalPathDuration,
+      total_duration_estimate: totalDuration,
+      resource_utilization: {
+        peak_api_calls_per_minute: this.calculatePeakApiCalls(stages),
+        peak_memory_mb: 512,
+        total_api_calls: sequence.filter(s => s.primitive === 'querying').length * 10,
+        estimated_cost: sequence.length * 0.1
+      },
+      failure_recovery_plan: {
+        retry_strategies: [{
+          applies_to: ['querying'],
+          max_retries: 3,
+          backoff_type: 'exponential',
+          backoff_base_ms: 1000,
+          circuit_breaker_threshold: 5
+        }],
+        fallback_orchestrations: ['minimal_sequence'],
+        partial_result_handling: 'continue',
+        notification_thresholds: [{
+          metric: 'failure_rate',
+          threshold: 0.3,
+          severity: 'warning',
+          message_template: 'High failure rate detected: {value}'
+        }]
+      }
+    };
+  }
+
+  private groupByParallelCompatibility(
+    nodes: any[],
+    dependencyGraph: DependencyGraph
+  ): any[] {
+    const existingGroups = dependencyGraph.parallel_opportunities.filter(group =>
+      group.primitives.some(p => nodes.some(n => n.id === p))
+    );
+    
+    return existingGroups.length > 0 ? existingGroups : [{
+      group_id: `sequential_group_${nodes.length}`,
+      primitives: nodes.map(n => n.id),
+      max_parallelism: 1,
+      resource_constraints: []
+    }];
+  }
+
+  private calculatePeakApiCalls(stages: ExecutionStage[]): number {
+    return Math.max(...stages.map(stage => 
+      stage.sequential_steps.filter(step => step.includes('querying')).length * 10
+    ));
+  }
+
+  private designEnhancedIntegrationStrategy(
+    sequence: PrimitiveStep[],
+    dependencyGraph: DependencyGraph
+  ): string {
+    const hasParallelOps = dependencyGraph.parallel_opportunities.length > 0;
+    const hasCriticalPath = dependencyGraph.critical_path.length > sequence.length * 0.7;
+    const hasReasoning = sequence.some(step => step.primitive === 'reasoning');
+    
+    if (hasParallelOps && !hasCriticalPath) {
+      return 'parallel_pipeline_with_synchronization_points';
+    } else if (hasReasoning && sequence.length > 4) {
+      return 'iterative_refinement_with_feedback_loops';
+    } else if (hasCriticalPath) {
+      return 'critical_path_optimization';
+    } else {
+      return 'adaptive_sequential_processing';
+    }
+  }
+
+  // Method to get thinking process for external access
+  public getThinkingProcess(): ThoughtProcess {
+    return this.thoughtProcess;
+  }
+
+  // Method to get dependency analyzer for external access
+  public getDependencyAnalyzer(): DependencyAnalyzer {
+    return this.dependencyAnalyzer;
   }
 }

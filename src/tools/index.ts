@@ -1,16 +1,27 @@
-// Export all tools for MCP server registration
-export { registerOrchestrationReasoning } from './orchestrationReasoning.js';
+// Re-export all tools from their organized directories
 
-// Re-export existing tools with correct names
-export { registerWebSearchTool } from './webSearch.js';
-export { registerCompanyResearchTool } from './companyResearch.js';
-export { registerCompetitorFinderTool } from './competitorFinder.js';
-export { registerCrawlingTool } from './crawling.js';
-export { registerGithubSearchTool } from './githubSearch.js';
-export { registerLinkedInSearchTool } from './linkedInSearch.js';
-export { registerRedditSearchTool } from './redditSearch.js';
-export { registerResearchPaperSearchTool } from './researchPaperSearch.js';
-export { registerTiktokSearchTool } from './tiktokSearch.js';
-export { registerWikipediaSearchTool } from './wikipediaSearch.js';
-export { registerYoutubeSearchTool } from './youtubeSearch.js';
-export { registerYoutubeVideoDetailsTool } from './youtubeVideoDetails.js';
+// Search tools
+export { registerWebSearchTool } from "./search/webSearch.js";
+export { registerResearchPaperSearchTool } from "./search/researchPaperSearch.js";
+export { registerCrawlingTool } from "./search/crawling.js";
+
+// Business tools
+export { registerCompanyResearchTool } from "./business/companyResearch.js";
+export { registerCompetitorFinderTool } from "./business/competitorFinder.js";
+
+// Social media tools
+export { registerLinkedInSearchTool } from "./social/linkedInSearch.js";
+export { registerRedditSearchTool } from "./social/redditSearch.js";
+export { registerTiktokSearchTool } from "./social/tiktokSearch.js";
+export { registerYoutubeSearchTool } from "./social/youtube/youtubeSearch.js";
+export { registerYoutubeVideoDetailsTool } from "./social/youtube/youtubeVideoDetails.js";
+
+// Knowledge base tools
+export { registerWikipediaSearchTool } from "./knowledge/wikipediaSearch.js";
+export { registerGithubSearchTool } from "./knowledge/githubSearch.js";
+
+// Orchestration tools
+export { registerOrchestrationReasoning } from "./orchestration/orchestrationReasoning.js";
+
+// Configuration
+export { type ExaConfig } from "./config.js";
