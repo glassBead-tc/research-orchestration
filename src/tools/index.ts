@@ -21,7 +21,4 @@ export { registerWikipediaSearchTool } from "./knowledge/wikipediaSearch.js";
 export { registerGithubSearchTool } from "./knowledge/githubSearch.js";
 
 // Orchestration tools
-export { registerOrchestrationReasoning } from "./orchestration/orchestrationReasoning.js";
-
-// Configuration
-export { type ExaConfig } from "./config.js";
+export { orchestrationReasoning } from "./orchestration/orchestrationReasoning.js";

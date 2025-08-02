@@ -1,8 +1,8 @@
 import { z } from "zod";
 import axios from "axios";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { API_CONFIG } from "./config.js";
-import { createRequestLogger } from "../utils/logger.js";
+import { API_CONFIG } from "../config.js";
+import { createRequestLogger } from "../../utils/logger.js";
 
 export function registerCrawlingTool(server: McpServer, config?: { exaApiKey?: string }): void {
   server.tool(

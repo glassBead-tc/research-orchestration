@@ -1,7 +1,7 @@
 import { z } from "zod";
 import axios from "axios";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { createRequestLogger } from "../utils/logger.js";
+import { createRequestLogger } from "../../../utils/logger.js";
 
 interface YouTubeVideoDetails {
   [videoId: string]: {
