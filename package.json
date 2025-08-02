@@ -1,12 +1,12 @@
 {
-  "name": "exa-mcp-server",
-  "version": "2.0.0",
+  "name": "research-orchestrator",
+  "version": "1.0.0",
   "description": "A Model Context Protocol server with Exa for web search, academic paper search, and Twitter/X.com search. Provides real-time web searches with configurable tool selection, allowing users to enable or disable specific search capabilities. Supports customizable result counts, live crawling options, and returns content from the most relevant websites.",
   "type": "module",
   "module": "./src/index.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/exa-labs/exa-mcp-server.git"
+    "url": "git+https://github.com/glassBead-tc/research-orchestration.git"
   },
   "bin": {
     "exa-mcp-server": "./.smithery/index.cjs"

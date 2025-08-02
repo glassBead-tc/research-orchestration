@@ -4,18 +4,10 @@ build/
 .env*
 .smithery/
 
-cc_mcp_config.json
-.roomodes
-directory-structure.md
-directory-tree-visual.txt
-retrieval-orchestration-patterns-analysis.md
-test-orchestration-reasoning.js
-workflow-directory-structure.md
-pseudocode/
-specs/
-agent-commands/
+.roomodes/
 docs/
 .roo/
 .claude/
-
-/Users/b.c.nims/glassBead-MASTER/Exa/demonstrations-series/exa-mcp-demonstrations-two/experiments/
+.hive-mind/
+claude_code_mcp_config.json
+artifact-docs/

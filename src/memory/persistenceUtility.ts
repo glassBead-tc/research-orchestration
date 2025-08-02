@@ -3,7 +3,7 @@
  * Supports Supabase (structured data), mem0 (vector memory), and Neo4j (graph relationships)
  */
 
-import { SessionStore, Experience, Pattern, ToolPreference } from './sessionStore';
+import { SessionStore, Experience, Pattern, ToolPreference } from './sessionStore.js';
 
 export interface PersistenceConfig {
   supabase?: {
@@ -140,7 +140,7 @@ export class PersistenceWorkflow {
     // Convert experiences to memories
     sessionData.experiences.forEach((exp: Experience) => {
       // Create a memory for each significant insight
-      exp.insights.forEach(insight => {
+      exp.insights.forEach((insight: string) => {
         memories.push({
           text: insight,
           metadata: {
@@ -212,7 +212,7 @@ export class PersistenceWorkflow {
     `);
     
     // Create primitive execution chain
-    let prevExpId = null;
+    let prevExpId: string | null = null;
     sessionData.experiences.forEach((exp: Experience, idx: number) => {
       // Create experience node
       cypher.push(`
@@ -240,7 +240,7 @@ export class PersistenceWorkflow {
       prevExpId = exp.id;
       
       // Create pattern relationships
-      exp.patterns.forEach(pattern => {
+      exp.patterns.forEach((pattern: Pattern) => {
         cypher.push(`
           MERGE (p:Pattern {id: '${pattern.id}', description: '${pattern.description}'})
           WITH p

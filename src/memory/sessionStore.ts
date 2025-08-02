@@ -85,7 +85,7 @@ export class SessionStore {
       this.updateToolPreferences(
         experience.output.metadata.tools_used,
         experience.input.context || 'general',
-        experience.quality.effectiveness
+        experience.quality.efficiency
       );
     }
     
