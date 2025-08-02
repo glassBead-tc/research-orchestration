@@ -11,3 +11,6 @@ docs/
 .hive-mind/
 claude_code_mcp_config.json
 artifact-docs/
+
+trees/
+specs/
