@@ -4,6 +4,7 @@
 export { registerWebSearchTool } from "./search/webSearch.js";
 export { registerResearchPaperSearchTool } from "./search/researchPaperSearch.js";
 export { registerCrawlingTool } from "./search/crawling.js";
+export { registerScoutSearchTool } from "./search/scoutSearch.js";
 
 // Business tools
 export { registerCompanyResearchTool } from "./business/companyResearch.js";
