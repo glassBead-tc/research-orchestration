@@ -41,6 +41,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "axios": "^1.7.8",
+    "chalk": "^5.5.0",
+    "dotenv": "^17.2.1",
+    "effect": "^3.17.6",
     "zod": "^3.22.4"
   },
   "devDependencies": {
