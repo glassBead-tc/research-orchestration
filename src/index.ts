@@ -25,6 +25,8 @@ import { registerYoutubeSearchTool } from './tools/social/youtube/youtubeSearch.
 import { registerYoutubeVideoDetailsTool } from './tools/social/youtube/youtubeVideoDetails.js';
 import { registerScoutSearchTool } from './tools/search/scoutSearch.js';
 import { registerLightResearchTools } from './tools/orchestration/lightResearch.js';
+import { registerPlanningScopingTools } from './tools/orchestration/planningScoping.js';
+import { registerScopingResources } from './resources/registerScopingResources.js';
 
 interface ThoughtData {
   thought: string;
@@ -287,6 +289,8 @@ registerYoutubeSearchTool(server as any, config);
 registerYoutubeVideoDetailsTool(server as any, config);
 registerScoutSearchTool(server as any, config);
 registerLightResearchTools(server as any, { exaApiKey: process.env.EXA_API_KEY, baseUrl: 'https://api.exa.ai' });
+registerPlanningScopingTools(server as any);
+registerScopingResources(server as any);
 
 // Build the full list of tools that have been registered on the server so far.  
 // `server.capabilities.tools` is populated by every `server.tool(...)` call that the
