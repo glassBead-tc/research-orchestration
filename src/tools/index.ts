@@ -23,3 +23,4 @@ export { registerGithubSearchTool } from "./knowledge/githubSearch.js";
 
 // Orchestration tools
 export { orchestrationReasoning } from "./orchestration/orchestrationReasoning.js";
+export { registerPlanningScopingTools } from "./orchestration/planningScoping.js";
