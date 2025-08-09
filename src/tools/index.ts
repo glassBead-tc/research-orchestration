@@ -22,3 +22,13 @@ export { registerGithubSearchTool } from "./knowledge/githubSearch.js";
 
 // Orchestration tools
 export { orchestrationReasoning } from "./orchestration/orchestrationReasoning.js";
+export { registerOrchestrationReasoningTool } from "./orchestration/registerOrchestrationReasoning.js";
+
+// Retrieval-only mechanism-aligned tools
+export { registerSecRegulatoryRetrievalTool } from "./retrieval/secRegulatoryRetrieval.js";
+export { registerPatentRetrievalTool } from "./retrieval/patentRetrieval.js";
+export { registerGrantsRetrievalTool } from "./retrieval/grantsRetrieval.js";
+export { registerDatasetRetrievalTool } from "./retrieval/datasetRetrieval.js";
+export { registerSecurityAdvisoryRetrievalTool } from "./retrieval/securityAdvisoryRetrieval.js";
+export { registerReleaseNotesRetrievalTool } from "./retrieval/releaseNotesRetrieval.js";
+export { registerOpenApiDiscoveryTool } from "./retrieval/openApiDiscovery.js";
