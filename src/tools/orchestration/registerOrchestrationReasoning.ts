@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from 'zod';
 
 export function registerOrchestrationReasoningTool(server: McpServer): void {
   server.tool(
@@ -20,16 +21,16 @@ Process:
 
 The output should be an orchestration plan that can be executed by calling the individual tools.`,
     {
-      thought: { type: "string", description: "The thought content" },
-      thoughtNumber: { type: "number", description: "Current thought number in sequence" },
-      totalThoughts: { type: "number", description: "Total expected thoughts in sequence" },
-      nextThoughtNeeded: { type: "boolean", description: "Whether the next thought is needed" },
-      isRevision: { type: "boolean", description: "Whether this is a revision of a previous thought", optional: true },
-      revisesThought: { type: "number", description: "Which thought number this revises", optional: true },
-      branchFromThought: { type: "number", description: "Which thought this branches from", optional: true },
-      branchId: { type: "string", description: "Unique identifier for this branch", optional: true },
-      needsMoreThoughts: { type: "boolean", description: "Whether more thoughts are needed", optional: true }
-    } as any,
+      thought: z.string().describe("The thought content"),
+      thoughtNumber: z.number().int().min(1).describe("Current thought number in sequence"),
+      totalThoughts: z.number().int().min(1).describe("Total expected thoughts in sequence"),
+      nextThoughtNeeded: z.boolean().describe("Whether the next thought is needed"),
+      isRevision: z.boolean().optional().describe("Whether this is a revision of a previous thought"),
+      revisesThought: z.number().int().min(1).optional().describe("Which thought number this revises"),
+      branchFromThought: z.number().int().min(1).optional().describe("Which thought this branches from"),
+      branchId: z.string().optional().describe("Unique identifier for this branch"),
+      needsMoreThoughts: z.boolean().optional().describe("Whether more thoughts are needed"),
+    },
     async (args) => {
       // For now, echo back the plan request. Real reasoning is expected client-side/agent-side.
       return {
