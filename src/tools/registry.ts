@@ -15,6 +15,7 @@ import { registerYoutubeVideoDetailsTool } from "./social/youtube/youtubeVideoDe
 import { registerScoutSearchTool } from "./search/scoutSearch.js";
 import { registerLightResearchTools } from "./orchestration/lightResearch.js";
 import { registerPlanningScopingTools } from "./orchestration/planningScoping.js";
+import { registerDeepResearchTools } from "./orchestration/deepResearch.js";
 
 export type ToolRegisterFn = (server: McpServer, config?: { exaApiKey?: string; youtubeApiKey?: string; baseUrl?: string }) => void;
 
@@ -41,6 +42,7 @@ export const TOOL_REGISTRY: ToolRegistryItem[] = [
   { id: "scout_search", category: "search", register: registerScoutSearchTool, requires: ["EXA_API_KEY"] },
   // Orchestration groups register multiple tools (namespaced). Selection by prefix is supported in bootstrap
   { id: "light_research.*", category: "orchestration", register: registerLightResearchTools },
+  { id: "deep_research.*", category: "orchestration", register: registerDeepResearchTools },
   { id: "planning_scoping.*", category: "orchestration", register: registerPlanningScopingTools },
 ];
 
