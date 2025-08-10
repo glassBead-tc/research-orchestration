@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { bootstrapAndRun } from "./server/bootstrap.js";
+import { createServer } from "./server/bootstrap.js";
 
-bootstrapAndRun().catch((error) => {
-  console.error("Fatal error running server:", error);
-  process.exit(1);
-});
+export default function ({ sessionId }: { sessionId: string; config: Record<string, unknown> }) {
+  const server = createServer();
+  // The smithery harness will call server.connect(transport) with stdio/shttp
+  return server as any;
+}
