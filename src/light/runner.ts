@@ -32,7 +32,7 @@ export interface RunnerEnv {
   baseUrl: string;
 }
 
-export const RunnerEnv = Context.Tag<RunnerEnv>("RunnerEnv");
+export const RunnerEnvTag = Context.Tag<RunnerEnv>();
 
 const log = (metrics: RunnerMetrics, msg: string) => {
   metrics.logs.push(msg);
@@ -40,7 +40,7 @@ const log = (metrics: RunnerMetrics, msg: string) => {
 
 const exaSearch = (q: string, kind: "fast" | "auto", limit: number) =>
   Effect.gen(function* () {
-    const env = yield* RunnerEnv;
+    const env = yield* RunnerEnvTag;
     const client = axios.create({
       baseURL: env.baseUrl,
       headers: {
@@ -168,6 +168,6 @@ export function runLightPlan(plan: LightPlan): Effect.Effect<RunOutput, Error, R
       metrics,
     };
   }).pipe(
-    Effect.timeoutFail({ onTimeout: () => new Error("Light plan timed out") }, plan.budgets.maxLatencyMs)
+    Effect.timeoutFail(new Error("Light plan timed out"), plan.budgets.maxLatencyMs)
   );
 }

@@ -1,0 +1,11 @@
+node_modules
+.git
+.hive-mind
+smithery-example.json
+smithery.yaml
+*.log
+.env*
+docs
+coverage
+build
+.smithery

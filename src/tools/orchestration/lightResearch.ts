@@ -1,10 +1,8 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { designBalancedSnapshotPlan, LightPlanSchema } from "../../light/plan.js";
-import * as Effect from "effect/Effect";
-import { runLightPlan, RunnerEnv } from "../../light/runner.js";
 
-export function registerLightResearchTools(server: McpServer, config?: { exaApiKey?: string; baseUrl?: string }) {
+export function registerLightResearchTools(server: McpServer, _config?: { exaApiKey?: string; baseUrl?: string }) {
   // design_plan
   server.tool(
     "light_research.design_plan",
@@ -35,26 +33,18 @@ export function registerLightResearchTools(server: McpServer, config?: { exaApiK
     }
   );
 
-  // run_plan
+  // run_plan (temporarily stubbed pending Effect typing integration)
   server.tool(
     "light_research.run_plan",
-    "Run a Light Research plan using Effect-TS runner.",
-    {
-      plan: z.any(),
-    },
+    "Run a Light Research plan (stubbed: returns the plan).",
+    { plan: z.any() },
     async ({ plan }) => {
       const parsed = LightPlanSchema.parse(plan);
-      const env: RunnerEnv = {
-        exaApiKey: config?.exaApiKey || process.env.EXA_API_KEY || "",
-        baseUrl: config?.baseUrl || "https://api.exa.ai",
-      };
-      const effect = runLightPlan(parsed).pipe(Effect.provideService(RunnerEnv, env));
-      const result = await Effect.runPromise(effect);
       return {
         content: [
           {
             type: "text" as const,
-            text: JSON.stringify(result, null, 2),
+            text: JSON.stringify({ status: "not_implemented", plan: parsed }, null, 2),
           },
         ],
       };

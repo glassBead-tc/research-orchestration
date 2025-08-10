@@ -30,6 +30,17 @@ const RESOURCES: ResourceDef[] = [
   },
 ];
 
+function tryRead(paths: string[]): string {
+  for (const p of paths) {
+    try {
+      return readFileSync(p, "utf-8");
+    } catch {
+      // continue
+    }
+  }
+  throw new Error(`Unable to load any of: ${paths.join(" | ")}`);
+}
+
 export function registerScopingResources(server: McpServer): void {
   for (const res of RESOURCES) {
     server.resource(
@@ -37,10 +48,14 @@ export function registerScopingResources(server: McpServer): void {
       res.name,
       { description: res.description, mimeType: "text/markdown" },
       async () => {
-        const fullPath = join(process.cwd(), "src", "resources", "scoping", res.file);
+        const candidates = [
+          join(process.cwd(), ".smithery", "resources", "scoping", res.file),
+          join(process.cwd(), "docs", "resources", "scoping", res.file),
+          join(process.cwd(), "src", "resources", "scoping", res.file),
+        ];
         let content = "";
         try {
-          content = readFileSync(fullPath, "utf-8");
+          content = tryRead(candidates);
         } catch (err) {
           content = `Error loading ${res.file}: ${String(err)}`;
         }
