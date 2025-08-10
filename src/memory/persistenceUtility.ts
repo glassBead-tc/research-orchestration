@@ -4,6 +4,7 @@
  */
 
 import { SessionStore, Experience, Pattern, ToolPreference } from './sessionStore.js';
+import { getSupabaseClient } from './supabaseClient.js';
 
 export interface PersistenceConfig {
   supabase?: {
@@ -83,14 +84,17 @@ export class PersistenceWorkflow {
    * Persist to Supabase (structured relational data)
    */
   private async persistToSupabase(sessionData: any): Promise<void> {
-    // This would use the Supabase client in a real implementation
-    // For now, we'll show the data structure
+    if (!this.config.supabase) {
+      throw new Error('Supabase configuration is missing');
+    }
+    
+    const supabase = getSupabaseClient(this.config.supabase.url, this.config.supabase.key);
     
     const sessionRecord = {
       id: sessionData.metadata.sessionId,
       agent_id: sessionData.metadata.agentId,
-      start_time: new Date(sessionData.metadata.startTime),
-      end_time: new Date(sessionData.metadata.endTime),
+      start_time: new Date(sessionData.metadata.startTime).toISOString(),
+      end_time: new Date(sessionData.metadata.endTime).toISOString(),
       experience_count: sessionData.statistics.experience_count,
       average_quality: sessionData.statistics.average_quality,
       insights_count: sessionData.statistics.insights_generated
@@ -99,7 +103,7 @@ export class PersistenceWorkflow {
     const experienceRecords = sessionData.experiences.map((exp: Experience) => ({
       id: exp.id,
       session_id: sessionData.metadata.sessionId,
-      timestamp: new Date(exp.timestamp),
+      timestamp: new Date(exp.timestamp).toISOString(),
       primitive: exp.primitive,
       input_data: exp.input,
       output_data: exp.output,
@@ -117,16 +121,71 @@ export class PersistenceWorkflow {
       contexts: pattern.context
     }));
     
-    console.log('Supabase persistence structure:', {
-      session: sessionRecord,
-      experiences: experienceRecords.length,
-      patterns: patternRecords.length
-    });
+    // Store session data
+    const { error: sessionError } = await supabase
+      .from('agent_sessions')
+      .insert(sessionRecord);
     
-    // In real implementation:
-    // await supabase.from(this.config.supabase.tables.sessions).insert(sessionRecord);
-    // await supabase.from(this.config.supabase.tables.experiences).insert(experienceRecords);
-    // await supabase.from(this.config.supabase.tables.patterns).insert(patternRecords);
+    if (sessionError) {
+      throw new Error(`Failed to insert session: ${sessionError.message}`);
+    }
+    
+    // Store experiences
+    if (experienceRecords.length > 0) {
+      const { error: experienceError } = await supabase
+        .from('agent_experiences')
+        .insert(experienceRecords);
+      
+      if (experienceError) {
+        throw new Error(`Failed to insert experiences: ${experienceError.message}`);
+      }
+    }
+    
+    // Store patterns
+    if (patternRecords.length > 0) {
+      const { error: patternError } = await supabase
+        .from('discovered_patterns')
+        .insert(patternRecords);
+      
+      if (patternError) {
+        throw new Error(`Failed to insert patterns: ${patternError.message}`);
+      }
+    }
+    
+    // Store insights separately
+    const insightRecords = [];
+    for (const exp of sessionData.experiences) {
+      for (const insight of exp.insights || []) {
+        insightRecords.push({
+          id: `${exp.id}-${insightRecords.length}`,
+          session_id: sessionData.metadata.sessionId,
+          experience_id: exp.id,
+          insight_text: insight,
+          insight_type: 'experience',
+          metadata: {
+            primitive: exp.primitive,
+            quality_score: exp.quality?.confidence
+          }
+        });
+      }
+    }
+    
+    if (insightRecords.length > 0) {
+      const { error: insightError } = await supabase
+        .from('agent_insights')
+        .insert(insightRecords);
+      
+      if (insightError) {
+        throw new Error(`Failed to insert insights: ${insightError.message}`);
+      }
+    }
+    
+    console.log('Supabase persistence completed:', {
+      session: sessionRecord.id,
+      experiences: experienceRecords.length,
+      patterns: patternRecords.length,
+      insights: insightRecords.length
+    });
   }
   
   /**
@@ -305,9 +364,53 @@ export class PersistenceWorkflow {
   }
   
   private async querySupabasePatterns(criteria: PatternQueryCriteria): Promise<Pattern[]> {
-    // Query structured pattern data
-    console.log('Querying Supabase for patterns:', criteria);
-    return [];
+    if (!this.config.supabase) {
+      return [];
+    }
+    
+    const supabase = getSupabaseClient(this.config.supabase.url, this.config.supabase.key);
+    
+    let query = supabase
+      .from('discovered_patterns')
+      .select('*');
+    
+    if (criteria.minConfidence !== undefined) {
+      query = query.gte('confidence', criteria.minConfidence);
+    }
+    
+    if (criteria.context) {
+      query = query.contains('contexts', [criteria.context]);
+    }
+    
+    if (criteria.agentId) {
+      // Join with sessions to filter by agent_id
+      query = query.eq('session_id', criteria.agentId);
+    }
+    
+    if (criteria.timeRange) {
+      query = query
+        .gte('created_at', criteria.timeRange.start.toISOString())
+        .lte('created_at', criteria.timeRange.end.toISOString());
+    }
+    
+    if (criteria.limit) {
+      query = query.limit(criteria.limit);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Failed to query Supabase patterns:', error);
+      return [];
+    }
+    
+    return (data || []).map(record => ({
+      id: record.id,
+      description: record.description,
+      confidence: record.confidence,
+      occurrences: record.occurrences,
+      context: record.contexts
+    }));
   }
   
   private async queryMem0Patterns(criteria: PatternQueryCriteria): Promise<Pattern[]> {

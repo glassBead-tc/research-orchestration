@@ -10,7 +10,9 @@ docs/
 .claude/
 .hive-mind/
 claude_code_mcp_config.json
+cc_mcp_config.json
 artifact-docs/
+.hive-mind/
 
 trees/
 specs/
