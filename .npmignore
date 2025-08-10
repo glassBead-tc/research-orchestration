@@ -5,6 +5,4 @@ tests/
 .npmignore
 tsconfig.json
 *.log
-.env* 
-
-/Users/b.c.nims/glassBead-MASTER/Exa/demonstrations-series/exa-mcp-demonstrations-two/experiments/
+.env*

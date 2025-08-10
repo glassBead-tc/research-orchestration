@@ -157,6 +157,10 @@ You can choose which tools to enable by adding the `--tools` parameter to your C
 
 #### Specify which tools to enable:
 
+You can now filter enabled tools using the `--tools` flag (comma-separated). Supports exact tool ids and namespaced groups (e.g., `planning_scoping.*`). If omitted, all tools are enabled.
+
+Example Claude Desktop config snippet:
+
 ```json
 {
   "mcpServers": {
@@ -165,7 +169,7 @@ You can choose which tools to enable by adding the `--tools` parameter to your C
       "args": [
         "-y",
         "exa-mcp-server",
-        "--tools=web_search_exa,research_paper_search,company_research,crawling,competitor_finder,linkedin_search,wikipedia_search_exa,github_search,scrape_reddit_exa,youtube_search_exa,tiktok_search_exa,youtube_video_details_exa,orchestrationReasoning"
+        "--tools=web_search_exa,research_paper_search_exa,planning_scoping.*"
       ],
       "env": {
         "EXA_API_KEY": "your-api-key-here",
@@ -176,28 +180,7 @@ You can choose which tools to enable by adding the `--tools` parameter to your C
 }
 ```
 
-For enabling multiple tools, use a comma-separated list:
-
-```json
-{
-  "mcpServers": {
-    "exa": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "exa-mcp-server",
-        "--tools=web_search_exa,research_paper_search,company_research,crawling,competitor_finder,linkedin_search,wikipedia_search_exa,github_search,scrape_reddit_exa,youtube_search_exa,tiktok_search_exa,youtube_video_details_exa,orchestrationReasoning"
-      ],
-      "env": {
-        "EXA_API_KEY": "your-api-key-here",
-        "YOUTUBE_API_KEY": "your-youtube-api-key-here"
-      }
-    }
-  }
-}
-```
-
-If you don't specify any tools, all tools enabled by default will be used.
+Environment variables are loaded from your environment; optionally create a local `.env` for development (see `.env.example`).
 
 ### 4. Restart Claude Desktop
 
@@ -219,7 +202,7 @@ npx exa-mcp-server
 npx exa-mcp-server --tools=web_search_exa
 
 # Enable multiple tools
-npx exa-mcp-server --tools=web_search_exa,research_paper_search
+npx exa-mcp-server --tools=web_search_exa,research_paper_search_exa
 
 # List all available tools
 npx exa-mcp-server --list-tools
