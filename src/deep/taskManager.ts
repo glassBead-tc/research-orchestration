@@ -73,12 +73,27 @@ async function runDeep(task: DeepTask, budgets: DeepBudgets) {
 
     const concurrency = Math.max(1, Math.min(5, budgets.concurrency ?? 5));
     const results: Array<Awaited<ReturnType<typeof doSearch>>> = [];
+    let successfulSearches = 0;
+    const failedReasons: string[] = [];
     for (let i = 0; i < queries.length; i += concurrency) {
       const batch = queries.slice(i, i + concurrency);
       const batchResults = await Promise.allSettled(batch.map((q) => doSearch(q)));
       for (const br of batchResults) {
-        if (br.status === "fulfilled") results.push(br.value);
+        if (br.status === "fulfilled") {
+          results.push(br.value);
+          successfulSearches += 1;
+        } else {
+          const reason = (br as PromiseRejectedResult).reason;
+          const message = typeof reason === "object" && reason && "message" in reason ? String((reason as any).message) : String(reason);
+          failedReasons.push(message);
+          logs.push(`Deep: search failed: ${message}`);
+        }
       }
+    }
+
+    if (successfulSearches === 0) {
+      const uniqueReasons = Array.from(new Set(failedReasons.filter(Boolean)));
+      throw new Error(`All searches failed${uniqueReasons.length ? ": " + uniqueReasons.slice(0, 3).join(" | ") : ""}`);
     }
 
     const flat = results.flat();
@@ -102,7 +117,10 @@ async function runDeep(task: DeepTask, budgets: DeepBudgets) {
       title: r.title,
       url: r.url,
       publishedDate: r.publishedDate,
-      weight: r.score ? Math.max(0.1, Math.min(1, r.score / 10)) : Math.max(0.1, 1 - idx * 0.05),
+      weight:
+        typeof r.score === "number" && Number.isFinite(r.score)
+          ? Math.max(0.1, Math.min(1, r.score / 10))
+          : Math.max(0.1, 1 - idx * 0.05),
     }));
 
     // Simple stub answer leveraging citations
