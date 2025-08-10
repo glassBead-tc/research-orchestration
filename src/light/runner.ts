@@ -1,10 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
-import * as Fiber from "effect/Fiber";
 import * as Duration from "effect/Duration";
 import * as Context from "effect/Context";
-import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
 import axios from "axios";
 import { LightPlan } from "./plan.js";
 
@@ -32,7 +29,7 @@ export interface RunnerEnv {
   baseUrl: string;
 }
 
-export const RunnerEnvTag = Context.Tag<RunnerEnv>();
+export const RunnerEnvTag = Context.GenericTag<RunnerEnv>("RunnerEnv");
 
 const log = (metrics: RunnerMetrics, msg: string) => {
   metrics.logs.push(msg);
@@ -56,7 +53,7 @@ const exaSearch = (q: string, kind: "fast" | "auto", limit: number) =>
       type: kind,
       numResults: limit,
       contents: {
-        text: { maxCharacters: 1200 },
+        text: { maxCharacters: 700 }, // highlights-only for speed
         livecrawl: "fallback" as const,
       },
     };
@@ -91,7 +88,7 @@ export interface RunOutput {
 }
 
 export function runLightPlan(plan: LightPlan): Effect.Effect<RunOutput, Error, RunnerEnv> {
-  return Effect.gen(function* () {
+  const core = Effect.gen(function* () {
     const metrics: RunnerMetrics = {
       startedAt: Date.now(),
       searchCallCount: 0,
@@ -113,7 +110,7 @@ export function runLightPlan(plan: LightPlan): Effect.Effect<RunOutput, Error, R
     // 2) search concurrently with bounded concurrency
     const searchEffects = queries.map((q) =>
       Effect.withLogSpan(`search:${q}`)(
-        Effect.retry(exaSearch(q, (plan.steps.find(s => s.type === "search" && s.params?.kind === "auto") ? "auto" : "fast"), 5), retryPolicy).pipe(
+        Effect.retry(exaSearch(q, (plan.steps.find(s => s.type === "search" && (s as any).params?.kind === "auto") ? "auto" : "fast"), 5), retryPolicy).pipe(
           Effect.map((res) => {
             metrics.searchCallCount += 1;
             return res;
@@ -128,7 +125,7 @@ export function runLightPlan(plan: LightPlan): Effect.Effect<RunOutput, Error, R
     });
 
     // accumulate successes
-    const flattened = allResults.flatMap((e) => ("_tag" in e && e._tag === "Left") ? [] : (e as any).right);
+    const flattened = allResults.flatMap((e) => ("_tag" in e && (e as any)._tag === "Left") ? [] : (e as any).right);
 
     // 3) dedup by URL
     const seen = new Set<string>();
@@ -167,7 +164,11 @@ export function runLightPlan(plan: LightPlan): Effect.Effect<RunOutput, Error, R
       summary: undefined,
       metrics,
     };
-  }).pipe(
-    Effect.timeoutFail(new Error("Light plan timed out"), plan.budgets.maxLatencyMs)
+  });
+
+  return Effect.timeout(core, Duration.millis(plan.budgets.maxLatencyMs)).pipe(
+    Effect.flatMap((maybe) =>
+      maybe ? Effect.succeed(maybe) : Effect.fail(new Error("Light plan timed out"))
+    )
   );
 }
