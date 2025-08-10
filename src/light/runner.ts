@@ -166,9 +166,11 @@ export function runLightPlan(plan: LightPlan): Effect.Effect<RunOutput, Error, R
     };
   });
 
-  return Effect.timeout(core, Duration.millis(plan.budgets.maxLatencyMs)).pipe(
-    Effect.flatMap((maybe) =>
-      maybe ? Effect.succeed(maybe) : Effect.fail(new Error("Light plan timed out"))
-    )
+  return Effect.timeoutFail(
+    core,
+    {
+      duration: Duration.millis(plan.budgets.maxLatencyMs),
+      onTimeout: () => new Error("Light plan timed out"),
+    }
   );
 }
