@@ -27,23 +27,30 @@ export interface DeepTask {
 interface StartArgs {
   query: string;
   budgets: DeepBudgets;
+  // Optional configuration to allow server/tool-provided values
+  exaApiKey?: string;
+  baseUrl?: string;
 }
 
 const tasks = new Map<string, DeepTask>();
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-async function runDeep(task: DeepTask, budgets: DeepBudgets) {
+async function runDeep(
+  task: DeepTask,
+  budgets: DeepBudgets,
+  config?: { exaApiKey?: string; baseUrl?: string }
+) {
   task.status = "running";
   const logs: string[] = [];
   const started = Date.now();
 
   const axiosInstance = axios.create({
-    baseURL: "https://api.exa.ai",
+    baseURL: config?.baseUrl || process.env.EXA_BASE_URL || "https://api.exa.ai",
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      "x-api-key": process.env.EXA_API_KEY || "",
+      "x-api-key": config?.exaApiKey || process.env.EXA_API_KEY || "",
     },
     timeout: Math.min(60000, budgets.maxLatencyMs ?? 60000),
   });
@@ -166,7 +173,7 @@ export function startDeepTask(args: StartArgs): DeepTask {
   };
   tasks.set(id, task);
   // Fire-and-forget
-  runDeep(task, args.budgets).catch(() => void 0);
+  runDeep(task, args.budgets, { exaApiKey: args.exaApiKey, baseUrl: args.baseUrl }).catch(() => void 0);
   return task;
 }
 

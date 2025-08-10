@@ -2,7 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { startDeepTask, getDeepTask } from "../../deep/taskManager.js";
 
-export function registerDeepResearchTools(server: McpServer, _config?: { exaApiKey?: string; baseUrl?: string }) {
+export function registerDeepResearchTools(server: McpServer, config?: { exaApiKey?: string; baseUrl?: string }) {
   // Start a deep research task (asynchronous)
   server.tool(
     "deep_research.start",
@@ -20,7 +20,12 @@ export function registerDeepResearchTools(server: McpServer, _config?: { exaApiK
         .optional(),
     },
     async ({ query, budgets }) => {
-      const task = startDeepTask({ query, budgets: budgets ?? {} });
+      const task = startDeepTask({
+        query,
+        budgets: budgets ?? {},
+        exaApiKey: config?.exaApiKey,
+        baseUrl: config?.baseUrl,
+      });
       return {
         content: [
           {
