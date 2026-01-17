@@ -7,12 +7,27 @@ export interface DeepBudgets {
   concurrency?: number;
 }
 
+/**
+ * MCP 2025-11-25 Task State
+ * @see https://modelcontextprotocol.io/specification/2025-11-25
+ */
+export type McpTaskState = "working" | "input_required" | "completed" | "failed" | "cancelled";
+
 export interface DeepTask {
   id: string;
   query: string;
+  /** @deprecated Use mcpState for MCP 2025-11-25 compliance */
   status: "pending" | "running" | "complete" | "failed";
+  /** MCP 2025-11-25 compliant task state */
+  mcpState: McpTaskState;
   startedAt: number;
   finishedAt?: number;
+  /** Progress tracking for MCP Tasks */
+  progress?: {
+    current: number;
+    total: number;
+    message?: string;
+  };
   answer?: string;
   citations?: Array<{ title: string; url: string; publishedDate?: string; weight?: number }>;
   metrics?: {
@@ -22,6 +37,8 @@ export interface DeepTask {
     logs: string[];
   };
   error?: string;
+  /** Whether this task can be cancelled */
+  cancelable: boolean;
 }
 
 interface StartArgs {
@@ -42,6 +59,8 @@ async function runDeep(
   config?: { exaApiKey?: string; baseUrl?: string }
 ) {
   task.status = "running";
+  task.mcpState = "working";
+  task.progress = { current: 0, total: 5, message: "Initializing deep research" };
   const logs: string[] = [];
   const started = Date.now();
 
@@ -62,6 +81,7 @@ async function runDeep(
     );
 
     logs.push(`Deep: starting ${queries.length} searches`);
+    task.progress = { current: 1, total: 5, message: `Executing ${queries.length} search queries` };
 
     const doSearch = async (q: string) => {
       const resp = await axiosInstance.post("/search", {
@@ -103,6 +123,8 @@ async function runDeep(
       throw new Error(`All searches failed${uniqueReasons.length ? ": " + uniqueReasons.slice(0, 3).join(" | ") : ""}`);
     }
 
+    task.progress = { current: 2, total: 5, message: "Processing and deduplicating results" };
+
     const flat = results.flat();
     const dedup = [] as typeof flat;
     const seen = new Set<string>();
@@ -120,6 +142,8 @@ async function runDeep(
       } catch {}
     }
 
+    task.progress = { current: 3, total: 5, message: "Extracting and ranking citations" };
+
     const citations = dedup.slice(0, 12).map((r, idx) => ({
       title: r.title,
       url: r.url,
@@ -129,6 +153,8 @@ async function runDeep(
           ? Math.max(0.1, Math.min(1, r.score / 10))
           : Math.max(0.1, 1 - idx * 0.05),
     }));
+
+    task.progress = { current: 4, total: 5, message: "Synthesizing answer from sources" };
 
     // Simple stub answer leveraging citations
     const answer = [
@@ -140,6 +166,8 @@ async function runDeep(
       .concat(["\nNote: This is a stub synthesis. A full multi-pass reasoning loop will be added in a later sprint."]) // placeholder per spec
       .join("\n");
 
+    task.progress = { current: 5, total: 5, message: "Research complete" };
+
     task.answer = answer;
     task.citations = citations;
     task.metrics = {
@@ -149,9 +177,11 @@ async function runDeep(
       logs,
     };
     task.status = "complete";
+    task.mcpState = "completed";
     task.finishedAt = Date.now();
   } catch (err) {
     task.status = "failed";
+    task.mcpState = "failed";
     task.error = err instanceof Error ? err.message : String(err);
     task.finishedAt = Date.now();
   } finally {
@@ -169,12 +199,33 @@ export function startDeepTask(args: StartArgs): DeepTask {
     id,
     query: args.query,
     status: "pending",
+    mcpState: "working",
     startedAt: Date.now(),
+    cancelable: true,
+    progress: { current: 0, total: 5, message: "Task queued" },
   };
   tasks.set(id, task);
   // Fire-and-forget
   runDeep(task, args.budgets, { exaApiKey: args.exaApiKey, baseUrl: args.baseUrl }).catch(() => void 0);
   return task;
+}
+
+/**
+ * Cancel a running deep research task
+ * @param id Task ID to cancel
+ * @returns true if task was cancelled, false if not found or already completed
+ */
+export function cancelDeepTask(id: string): boolean {
+  const task = tasks.get(id);
+  if (!task) return false;
+  if (task.mcpState === "completed" || task.mcpState === "failed" || task.mcpState === "cancelled") {
+    return false;
+  }
+  task.status = "failed";
+  task.mcpState = "cancelled";
+  task.error = "Task cancelled by user";
+  task.finishedAt = Date.now();
+  return true;
 }
 
 export function getDeepTask(id: string): DeepTask | undefined {

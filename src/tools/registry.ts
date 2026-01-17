@@ -16,6 +16,10 @@ import { registerScoutSearchTool } from "./search/scoutSearch.js";
 import { registerLightResearchTools } from "./orchestration/lightResearch.js";
 import { registerPlanningScopingTools } from "./orchestration/planningScoping.js";
 import { registerDeepResearchTools } from "./orchestration/deepResearch.js";
+import { registerOrchestrationDiscoveryTools } from "./orchestration/orchestrationDiscovery.js";
+import { registerOrchestrationMatcherTool } from "./orchestration/orchestrationMatcher.js";
+import { registerOrchestrationReasoningTool } from "./orchestration/orchestrationReasoningImpl.js";
+import { registerResearchRouterTools } from "./orchestration/researchRouter.js";
 
 export type ToolRegisterFn = (server: McpServer, config?: { exaApiKey?: string; youtubeApiKey?: string; baseUrl?: string }) => void;
 
@@ -44,6 +48,11 @@ export const TOOL_REGISTRY: ToolRegistryItem[] = [
   { id: "light_research.*", category: "orchestration", register: registerLightResearchTools },
   { id: "deep_research.*", category: "orchestration", register: registerDeepResearchTools },
   { id: "planning_scoping.*", category: "orchestration", register: registerPlanningScopingTools },
+  // New orchestration tools for agent-driven research workflows
+  { id: "orchestration_discovery.*", category: "orchestration", register: registerOrchestrationDiscoveryTools },
+  { id: "orchestration_matcher", category: "orchestration", register: registerOrchestrationMatcherTool },
+  { id: "orchestration_reasoning", category: "orchestration", register: registerOrchestrationReasoningTool },
+  { id: "research.*", category: "orchestration", register: registerResearchRouterTools },
 ];
 
 export function shouldRegisterToolId(id: string, selected: Set<string>): boolean {
